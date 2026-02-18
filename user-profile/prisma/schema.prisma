@@ -11,6 +11,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas = ["smart_plant"]
 }
 
 
@@ -26,4 +27,5 @@ model Profile{
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("profile")
+  @@schema("smart_plant")
 }

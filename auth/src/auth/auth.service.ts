@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request,Response } from 'express';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
@@ -37,76 +37,83 @@ export class AuthService {
 
   //Registers the user via email and password
   //Passes down the other info to User service via axios REST call
-  //TODO: Add try catch and custom handling of axios and errors
   async register(req:RegisterRequest, res:Response){
-    const{email,password,goal,username,}=req;
-
-    const isExists=await this.prismaService.user.findUnique({
-      where:{
-        email
-      }
-    })
-
-    if(isExists){
-      throw new ConflictException("User already exists with this email");
-    }
-
-    const hashedPassword=await hash(password);
-    
-    const user=await this.prismaService.user.create({
-      data:{
-        email,
-        password:hashedPassword,
-      }
-    });
-    const data={
-      goal:goal,
-      username:username,
-      authId:user.id
-    }
-
     try{
-      const axiosResponse=firstValueFrom( this.httpService.post(`${this.USER_SERVICE_URL}/create`,data,{
-        headers:{
-          "Content-Type":'application/json'
-        }
-      }));
-    
-    }catch(err){
-      throw new ConflictException(err);
-    }
+      const{email,password,goal,username,}=req;
 
-    return this.auth(res,user.id);
+      const isExists=await this.prismaService.user.findUnique({
+        where:{
+          email
+        }
+      })
+
+      if(isExists){
+        throw new ConflictException("User already exists with this email");
+      }
+
+      const hashedPassword=await hash(password);
+      
+      const user=await this.prismaService.user.create({
+        data:{
+          email,
+          password:hashedPassword,
+        }
+      });
+      const data={
+        goal:goal,
+        username:username,
+        authId:user.id
+      }
+
+      try{
+        const axiosResponse=firstValueFrom( this.httpService.post(`${this.USER_SERVICE_URL}/create`,data,{
+          headers:{
+            "Content-Type":'application/json'
+          }
+        }));
+      
+      }catch(err){
+        throw new ConflictException(err);
+      }
+
+      return this.auth(res,user.id);
+      
+    }catch(err){
+      throw new InternalServerErrorException(err);
+    }
   }
 
   //Logs in the user if the credentials are valid
   //Passes down the id to User service to get other info via axios REST call
-  //TODO: Add try catch and custom handling of axios and errors
   async login(req:LoginRequest, res:Response){
-    const {email,password}=req;
-
-    const user=await this.prismaService.user.findUnique({
-      where:{
-        email
-      },
-    });
-
-    if(!user){
-      throw new NotFoundException("User not found");
-    }
-
-    const same=await verify(user.password,password);
-    if(!same){
-      throw new UnauthorizedException("Password dosent match");
-    }
-
     try{
-      const axiosResponse=firstValueFrom(this.httpService.get(`${this.USER_SERVICE_URL}/get/${user.id}`));
+      const {email,password}=req;
+
+      const user=await this.prismaService.user.findUnique({
+        where:{
+          email
+        },
+      });
+
+      if(!user){
+        throw new NotFoundException("User not found");
+      }
+
+      const same=await verify(user.password,password);
+      if(!same){
+        throw new UnauthorizedException("Password dosent match");
+      }
+
+      try{
+        const axiosResponse=firstValueFrom(this.httpService.get(`${this.USER_SERVICE_URL}/get/${user.id}`));
+      }catch(err){
+        throw new ConflictException(err);
+      }
+      
+      return this.auth(res,user.id);
     }catch(err){
-      throw new ConflictException(err);
+       throw new InternalServerErrorException(err);
     }
-    
-    return this.auth(res,user.id);
     
   }
 
@@ -119,39 +126,47 @@ export class AuthService {
   //If expired/invalid credentials throws
   //TODO: Add try catch and custom handling of errors
   async refresh(req:Request,res:Response){
-    const refreshToken=req.cookies['refreshToken'];
-    if(!refreshToken){
-      throw new UnauthorizedException("Refresh token must be included");
-    }
-
-    const payload:Payload=await this.jwtService.verifyAsync(refreshToken);
-
-    if(payload){
-      const user=await this.prismaService.user.findUnique({
-        where:{
-          id:payload.id
-        }
-      });
-      if(!user){
-        throw new NotFoundException('User not found');
+    try{
+      const refreshToken=req.cookies['refreshToken'];
+      if(!refreshToken){
+        throw new UnauthorizedException("Refresh token must be included");
       }
 
-      return this.auth(res,payload.id);
+      const payload:Payload=await this.jwtService.verifyAsync(refreshToken);
+
+      if(payload){
+        const user=await this.prismaService.user.findUnique({
+          where:{
+            id:payload.id
+          }
+        });
+        if(!user){
+          throw new NotFoundException('User not found');
+        }
+
+        return this.auth(res,payload.id);
+      }
+    }catch(err){
+      throw new InternalServerErrorException(err);
     }
   }
 
   //Method for validating user on the id if it exists
-  //TODO: Add try catch and custom errors
   async validate(id:string){
-    const user=await this.prismaService.user.findUnique({
+    try{
+      const user=await this.prismaService.user.findUnique({
       where:{
         id
+        }
+      });
+      if(!user){
+        throw new NotFoundException("User not found");
       }
-    });
-    if(!user){
-      throw new NotFoundException("User not found");
+      return user;
+    }catch(err){
+      throw new InternalServerErrorException(err);
+
     }
-    return user;
   }
 
   //Method for seting up the cookie

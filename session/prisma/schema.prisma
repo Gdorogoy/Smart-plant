@@ -1,0 +1,20 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas = ["smart_plant"]
+}
+
+model userSession {
+  id        String   @id @unique @default(uuid())
+  duration  Int      @default(1)
+  userId    String   @map("user_id")
+  plantId   String   @map("plant_id")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("smart_plant")
+  @@map("user_sessions")
+}

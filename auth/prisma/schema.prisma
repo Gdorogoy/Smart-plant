@@ -11,6 +11,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas = ["smart_plant"]
 }
 
 
@@ -21,4 +22,5 @@ model User{
   password String 
 
   @@map("auth_user")
+  @@schema("smart_plant")
 }
