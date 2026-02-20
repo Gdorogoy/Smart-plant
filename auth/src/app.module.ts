@@ -9,7 +9,7 @@ import { HttpModule } from '@nestjs/axios';
 @Module({
   imports: [
     ConfigModule.forRoot({isGlobal:true}), AuthModule, PrismaModule,
-    HttpModule
+    HttpModule.register({global:true})
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -56,4 +56,16 @@ export class SessionService {
         }
     }
 
+    async getAllSessions(id:string){
+        try{
+            const sessions=await this.prismaService.userSession.findMany({
+                where:{
+                    userId:id
+                }
+            });
+            return sessions;
+        }catch(err){
+            throw new InternalServerErrorException(err);
+        }
+    }
 }

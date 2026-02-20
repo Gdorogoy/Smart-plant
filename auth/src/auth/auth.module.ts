@@ -13,8 +13,9 @@ import { AuthService } from './auth.service';
     JwtModule.registerAsync({
       imports:[ConfigModule],
       inject:[ConfigService],
-      useFactory:getJwtConfig
-    })
+      useFactory:getJwtConfig,
+    }),
+    
   ],
   controllers: [AuthController,],
   providers: [AuthService],
