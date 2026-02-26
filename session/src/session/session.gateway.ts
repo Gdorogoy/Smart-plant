@@ -1,4 +1,4 @@
-import { MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { SessionService } from './session.service';
 import {Server, Socket} from 'socket.io'
 import { StartSessionRequest } from './entites/start.request';
@@ -11,8 +11,7 @@ export class SessionGateway implements OnGatewayConnection , OnGatewayDisconnect
 
   handleConnection(client:Socket) {}
   handleDisconnect(client: Socket) {
-    
-
+    client.disconnect();
   }
 
   @SubscribeMessage('test')
@@ -22,17 +21,29 @@ export class SessionGateway implements OnGatewayConnection , OnGatewayDisconnect
   }
 
   @SubscribeMessage('start')
-  async startSession(@MessageBody() data:any){
-    const parsed = JSON.parse(data);
-    
-    const session= await this.sessionService.startSession(parsed);
-    return { event: 'sessionStarted', data: session };
+  async startSession(
+    @MessageBody() data:any,
+    @ConnectedSocket() client:Socket
+  ){
+    const session= await this.sessionService.startSession(data);
+    // client.emit('sessionStarted',{
+    //   id:session.id,
+    //   startedAt:session.createdAt
+    // });
+    return {
+      event: 'sessionStarted', 
+      data: session 
+    };
   }
 
   @SubscribeMessage('end')
-  async endSession(@MessageBody() data:any){
-    const parsed = JSON.parse(data);
-    const session= await this.sessionService.startSession(parsed);
+  async endSession(
+    @MessageBody() data:any,
+    @ConnectedSocket() client:Socket
+  ){
+    const session= await this.sessionService.endSession(data);
+    // client.emit('sessionEnded',{session});
+    this.handleDisconnect(client);
     return { event: 'sessionEnded', data: session };
 
   }

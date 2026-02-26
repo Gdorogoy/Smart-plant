@@ -1,9 +1,7 @@
 import { CanActivate, ExecutionContext } from "@nestjs/common";
-import { Observable } from "rxjs";
+import { AuthGuard } from "@nestjs/passport";
 
 
-export class AuthGuard implements CanActivate{
-    canActivate(context: ExecutionContext){
-        
-    }
+export class JwtGuard extends AuthGuard('jwt'){
+
 }

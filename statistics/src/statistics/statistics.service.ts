@@ -28,8 +28,7 @@ export class StatisticsService {
         try{
             const res=firstValueFrom(this.httpService.get(`${this.SESSION_SERVICE_URL}/${id}`));
             const userSessions=(await res).data;
-            console.log(userSessions);
-            return userSessions.map((session:Session) => this.normalize(new Date(session.createdAt)));
+            return userSessions;
         }catch(err){
             console.log(err);
             throw new Error(err);
@@ -38,7 +37,7 @@ export class StatisticsService {
 
     //Method to normolize the date from DD/MM/YY:MM.. to DD-MM-YY
     private normalize(d: Date): string {
-        return `${d.getDate()}-${d.getMonth()+1}-${d.getFullYear()}`;
+        return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
     }
 
     //Checks wheter the passed dates are the same
@@ -48,11 +47,20 @@ export class StatisticsService {
                 (a.getDate() === b.getDate())
     }
 
+    private isInWeeksRange(a: string){
+        const d=new Date(a);
+        const today=new Date();
+
+        const lastWeekMax=new Date();
+        lastWeekMax.setDate(today.getDate()-7);
+        return  d>=lastWeekMax && d<=today;
+    }
+
     async getAllData(userId:string){
         const mothlyActivity=await this.getMonthlyActivity(userId);
-        const todayActivity=await this.getTodayActivity();
-        const weeklyActivityByPlant=await this.getWeeklyActivityByPlant();
-        const dailyWeeklyActivity=await this.getDailyWeeklyActivity();
+        const todayActivity=await this.getTodayActivity(userId);
+        const weeklyActivityByPlant=await this.getWeeklyActivityByPlant(userId);
+        const dailyWeeklyActivity=await this.getDailyWeeklyActivity(userId);
 
         return{
             mothlyActivity:mothlyActivity,
@@ -68,12 +76,12 @@ export class StatisticsService {
             const today = new Date();
             
             //Fetch sessions for this request
-            const userSessions = await this.getUserSession(userId);
+            let userSessions = await this.getUserSession(userId);
+            userSessions=userSessions.map((session:Session) => this.normalize(new Date(session.createdAt)));
             const sessionSet = new Set(userSessions);
 
             //Generate the last 31 days and check if user had any sessions
             const result:MonthlyActivityItem[] = [];
-
             for (let i = 31; i >= 0; i--) {
                 const d = new Date();
                 d.setDate(today.getDate() - i);
@@ -92,33 +100,58 @@ export class StatisticsService {
     }
 
     //Calculates how much stuided overall across all of the plants today
-    async getTodayActivity(){
+    async getTodayActivity(userId:string){
         try{
-            
-
+            const userSession=await this.getUserSession(userId);
+            const todaySessions=userSession.filter((session:Session)=>{
+                return this.normalize(new Date(session.createdAt))===this.normalize(new Date(Date.now()))
+            });
+            let sum=0;
+            todaySessions.forEach((session:Session)=> {
+                sum+=session.duration
+            });
+            return sum;
 
 
         }catch(err){
-
+            throw err;
         }
     }
     
 
     //Calculates how much stuided overall across all of the plants in the past week
-    async getWeeklyActivityByPlant(){
+    async getWeeklyActivityByPlant(userId: string){
         try{
-            
-        }catch(err){
+            const userSession=await this.getUserSession(userId);
+            const thisWeeksSessions=userSession.filter((session:Session)=>{
+                return this.isInWeeksRange(this.normalize(new Date(session.createdAt)))
+            });
+            const map=new Map<string,number>();
+            thisWeeksSessions.forEach((session:Session)=>{
+                map.set(session.plantId,(map.get(session.plantId) ?? 0) + session.duration)
+            });
 
+            return Object.fromEntries(map);
+        }catch(err){
+            throw err;
         }
     }
 
     //Calculates how much stuided overall across all of the days in the past week
-    async getDailyWeeklyActivity(){
+    async getDailyWeeklyActivity(userId:string){
         try{
-            
-        }catch(err){
+            const userSession=await this.getUserSession(userId);
+            const thisWeeksSessions=userSession.filter((session:Session)=>{
+                return this.isInWeeksRange(this.normalize(new Date(session.createdAt)))
+            });
+            let sum=0;
+            thisWeeksSessions.forEach((session:Session)=> {
+                sum+=session.duration
+            });
+            return sum;
 
+        }catch(err){
+            throw err;
         }
     }
 

@@ -1,3 +1,4 @@
+import { auth } from './../../../auth/node_modules/.pnpm/@prisma+client@7.4.1_prisma@7.4.1_@types+react@19.2.14_react-dom@19.2.4_react@19.2.4__r_8e53772b4f7db0920d7f3afa4e50fe46/node_modules/.prisma/client/index.d';
 import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateUserRequest } from './dto/create.user.request';
 import { GetUserRequest } from './dto/get.user.request';
@@ -51,7 +52,7 @@ export class UserService {
 
       const user=await this.prismaService.profile.findUnique({
         where:{
-          authId
+          authId:authId
         },
         select:{
           username:true,

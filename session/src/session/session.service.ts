@@ -30,14 +30,16 @@ export class SessionService {
     //TODO: When statistic service built: add auto send via message queue the data
     async endSession(data :EndSessionRequest){
         try{
-            const {time,sessionId}=data;
+            const {sessionId}=data;
             const session=await this.prismaService.userSession.findFirst({
                 where:{
                     id:sessionId
                 }
             });
+            console.log(session);
             if(!session){
                 throw new NotFoundException('Session not found');
+                return;
             }
 
             return await this.prismaService.userSession.update({
@@ -45,11 +47,11 @@ export class SessionService {
                     id:sessionId
                 },
                 data:{
-                    duration:(time.getTime()-session.createdAt.getTime())
+                    duration:(Date.now()-session.createdAt.getTime())
                 }
             });
             
-            return {message:'ended'};
+            return session;
 
         }catch(err){
             throw new InternalServerErrorException(err);

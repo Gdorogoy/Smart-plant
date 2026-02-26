@@ -1,3 +1,4 @@
+import { auth } from './../../node_modules/.pnpm/@prisma+client@7.4.1_prisma@7.4.1_@types+react@19.2.14_react-dom@19.2.4_react@19.2.4__r_8e53772b4f7db0920d7f3afa4e50fe46/node_modules/.prisma/client/index.d';
 import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request,Response } from 'express';
@@ -40,8 +41,7 @@ export class AuthService {
   async register(req:RegisterRequest, res:Response){
     try{
       const{email,password,goal,username,}=req;
-
-      const isExists=await this.prismaService.user.findUnique({
+      const isExists=await this.prismaService.auth.findUnique({
         where:{
           email
         }
@@ -53,26 +53,25 @@ export class AuthService {
 
       const hashedPassword=await hash(password);
       
-      const user=await this.prismaService.user.create({
+      const user=await this.prismaService.auth.create({
         data:{
           email,
-          password:hashedPassword,
+          password:hashedPassword
         }
-      });
+      })
       const data={
         goal:goal,
         username:username,
         authId:user.id
       }
-
       try{
-        const axiosResponse=firstValueFrom( this.httpService.post(`${this.USER_SERVICE_URL}/create`,data,{
+        const axiosResponse=await firstValueFrom( this.httpService.post(`${this.USER_SERVICE_URL}/create`,data,{
           headers:{
             "Content-Type":'application/json'
           }
         }));
-      
       }catch(err){
+        console.error(err);
         throw new ConflictException(err);
       }
 
@@ -89,7 +88,7 @@ export class AuthService {
     try{
       const {email,password}=req;
 
-      const user=await this.prismaService.user.findUnique({
+      const user=await this.prismaService.auth.findFirst({
         where:{
           email
         },
@@ -104,13 +103,22 @@ export class AuthService {
         throw new UnauthorizedException("Password dosent match");
       }
 
+      let userData;
       try{
-        const axiosResponse=firstValueFrom(this.httpService.get(`${this.USER_SERVICE_URL}/get/${user.id}`));
+        const axiosResponse=await firstValueFrom(this.httpService.get(`${this.USER_SERVICE_URL}/get/${user.id}`));
+        userData=axiosResponse.data;
       }catch(err){
+        console.log(err);
         throw new ConflictException(err);
       }
+
+      const { accessToken } = this.auth(res, user.id);
+
+      return {
+        accessToken,
+        data:userData
+      }
       
-      return this.auth(res,user.id);
     }catch(err){
        throw new InternalServerErrorException(err);
     }
@@ -135,7 +143,7 @@ export class AuthService {
       const payload:Payload=await this.jwtService.verifyAsync(refreshToken);
 
       if(payload){
-        const user=await this.prismaService.user.findUnique({
+        const user=await this.prismaService.auth.findUnique({
           where:{
             id:payload.id
           }
@@ -154,7 +162,7 @@ export class AuthService {
   //Method for validating user on the id if it exists
   async validate(id:string){
     try{
-      const user=await this.prismaService.user.findUnique({
+      const user=await this.prismaService.auth.findUnique({
       where:{
         id
         }

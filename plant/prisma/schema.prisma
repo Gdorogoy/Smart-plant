@@ -11,21 +11,18 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  schemas = ["user_profile"]
+  schemas = ["plant"]
 }
 
+model plant{
+  id String @id @unique @default(uuid())
 
-model Profile{
-  id String @id @unique @default(uuid()) @map("id")
-  authId String @unique @map("auth_id")
+  userId String
+  title String
+  image String 
 
-  username String @unique @map("username")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  goal Int @map("goal_time")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("profile")
-  @@schema("user_profile")
+  @@schema("plant")
 }

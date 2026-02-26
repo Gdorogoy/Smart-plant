@@ -1,0 +1,11 @@
+{
+  "name": "user-profile",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev":"pnpm -r start:dev "
+  }
+}
