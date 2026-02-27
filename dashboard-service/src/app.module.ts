@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { StatisticsModule } from './statistics/statistics.module';
-import { ConfigModule } from '@nestjs/config';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
-  imports: [StatisticsModule, ConfigModule.forRoot({isGlobal:true}),],
+  imports: [HttpModule],
   controllers: [AppController],
   providers: [AppService],
 })
