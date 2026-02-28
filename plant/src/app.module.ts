@@ -4,10 +4,11 @@ import { AppService } from './app.service';
 import { PlantModule } from './plant/plant.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
+import { ProgressModule } from './progress/progress.module';
 
 @Module({
   imports: [PlantModule, PrismaModule, 
-    ConfigModule.forRoot({isGlobal:true})
+    ConfigModule.forRoot({isGlobal:true}), ProgressModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -13,9 +13,4 @@ export class StatisticsController {
     return await this.statisticsService.getAllData(id);
   }
 
-  @MessagePattern('new-session')
-  async reciveSessionData(@Payload() data:Session){
-      //TODO:Method to resovle the message
-
-  }
 }

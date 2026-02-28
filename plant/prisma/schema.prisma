@@ -21,6 +21,10 @@ model plant{
   title String
   image String 
 
+  currentLevel Int @default(1)
+  currentXp Int @default(0)
+  totalXp Int @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

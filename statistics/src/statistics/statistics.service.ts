@@ -1,10 +1,10 @@
-import { userSession } from './../../../session/node_modules/.pnpm/@prisma+client@7.4.0_prisma@7.4.0_@types+react@19.2.14_react-dom@19.2.4_react@19.2.4__r_9e6182f450fcf9402f0b3538a2935135/node_modules/.prisma/client/index.d';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Session } from './entites/session.entity';
 import { MonthlyActivityItem } from './entites/monthly.activity';
+import { RmqContext } from '@nestjs/microservices';
 
 @Injectable()
 export class StatisticsService {
@@ -95,7 +95,7 @@ export class StatisticsService {
 
             return result;
         } catch (err) {
-            throw err;
+            throw new Error(err);
         }
     }
 
@@ -114,7 +114,7 @@ export class StatisticsService {
 
 
         }catch(err){
-            throw err;
+            throw new Error(err);
         }
     }
     
@@ -133,7 +133,7 @@ export class StatisticsService {
 
             return Object.fromEntries(map);
         }catch(err){
-            throw err;
+            throw new Error(err);
         }
     }
 
@@ -151,7 +151,7 @@ export class StatisticsService {
             return sum;
 
         }catch(err){
-            throw err;
+            throw new Error(err);
         }
     }
 

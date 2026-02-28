@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { SessionService } from './session.service';
 import { SessionGateway } from './session.gateway';
 import { SessionController } from './session.controller';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ClientProxy, ClientProxyFactory, ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   providers: [SessionGateway, SessionService],
@@ -18,7 +18,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
           durable:false
         }
       }
-    }])
+    }]),
   ]
 })
 export class SessionModule {}

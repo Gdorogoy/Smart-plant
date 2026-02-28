@@ -10,7 +10,7 @@ export class SessionService {
 
     constructor(
         private readonly prismaService:PrismaService,
-        @Inject('SESSION-SERVCIE') private client:ClientProxy
+        @Inject('SESSION-SERVICE') private client:ClientProxy
     ){
     }
 
