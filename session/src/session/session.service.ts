@@ -4,6 +4,7 @@ import { StartSessionRequest } from './entites/start.request';
 import { EndSessionRequest } from './entites/end.request';
 import { Session } from './entites/session';
 import { ClientProxy, ClientProxyFactory } from '@nestjs/microservices';
+import { lastValueFrom} from 'rxjs'
 
 @Injectable()
 export class SessionService {
@@ -28,7 +29,7 @@ export class SessionService {
     //Method to send statistics data as message payload via rabbtimq
     private async sendStatistics(routingKey:string,payload:Session){
         try{
-            return this.client.send(routingKey,payload);
+            return lastValueFrom(this.client.send(routingKey,payload));
         }catch(err){
             console.error(err);
             throw err;
@@ -59,7 +60,6 @@ export class SessionService {
     }
 
     //Method that ends session , updates the duration of it
-    //TODO: When statistic service built: add auto send via message queue the data
     async endSession(data :EndSessionRequest){
         try{
             const {sessionId}=data;
@@ -82,7 +82,6 @@ export class SessionService {
                     duration:(Date.now()-session.createdAt.getTime())
                 }
             });
-
             await this.sendStatistics('new-session',updated);
             
             return updated;
