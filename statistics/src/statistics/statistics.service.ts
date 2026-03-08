@@ -1,10 +1,13 @@
+import { Cron } from '@nestjs/schedule';
+import { userSession } from './../../node_modules/.pnpm/@prisma+client@7.4.2_prisma@7.4.2_@types+react@19.2.14_react-dom@19.2.4_react@19.2.4__r_49b4b128965f74ea9bbd7586bc0c7d7a/node_modules/.prisma/client/index.d';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Session } from './entites/session.entity';
 import { MonthlyActivityItem } from './entites/monthly.activity';
-import { RmqContext } from '@nestjs/microservices';
+import { ClientProxy, RmqContext } from '@nestjs/microservices';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class StatisticsService {
@@ -15,19 +18,26 @@ export class StatisticsService {
 
     constructor(
         private readonly httpService:HttpService,
-        private readonly configService:ConfigService
+        private readonly configService:ConfigService,
+        @Inject("STATISTICS-SERVICE") private client:ClientProxy,
+        private readonly prismaService:PrismaService
     ){
         this.SESSION_SERVICE_URL=configService.getOrThrow("SESSION_URL");
     }
 
 
-    
+    //TODO:
+    // 2. Impelemnt method inactive users (session wernet recordeed until 15:30)
+
 
     //Fetches all of the userSessions
     private async getUserSession(id:string){
         try{
-            const res=firstValueFrom(this.httpService.get(`${this.SESSION_SERVICE_URL}/${id}`));
-            const userSessions=(await res).data;
+            const userSessions=await this.prismaService.userSession.findMany({
+                where:{
+                    userId:id
+                },
+            });
             return userSessions;
         }catch(err){
             console.log(err);
@@ -76,8 +86,8 @@ export class StatisticsService {
             const today = new Date();
             
             //Fetch sessions for this request
-            let userSessions = await this.getUserSession(userId);
-            userSessions=userSessions.map((session:Session) => this.normalize(new Date(session.createdAt)));
+            const userSessionsDB = await this.getUserSession(userId);
+            const userSessions=userSessionsDB.map((session:Session) => this.normalize(new Date(session.createdAt)));
             const sessionSet = new Set(userSessions);
 
             //Generate the last 31 days and check if user had any sessions
@@ -149,6 +159,79 @@ export class StatisticsService {
                 sum+=session.duration
             });
             return sum;
+
+        }catch(err){
+            throw new Error(err);
+        }
+    }
+
+
+    //Method for sending out weekly statistics (sending message to the queue)
+    @Cron('0 9 * * 0')
+    private async getAllUsersWeeklyStatistics(){
+        try{
+            const users=(await firstValueFrom( this.httpService.get(''))).data;
+            const oneWeekAgo=new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate()-7);
+            const map=new Map<string,any>();
+            // sessions.forEach((session:Session)=>{
+            //     map.set(session.plantId,(map.get(session.plantId) ?? 0) + session.duration)
+            // });
+
+
+            for(const user of users){
+                const plantStats=await this.getWeeklyActivityByPlant(user.id);
+                map.set(
+                    user.id,
+                    {
+                        email:user.email,
+                        username:user.username,
+                        stats:plantStats
+                    }
+                );
+            }
+            let payload;
+            for(const [userId,data] of map){
+                payload.push({
+                    userId,
+                    email:data.email,
+                    username:data.username,
+                    stats:data.stats});
+            }
+            this.client.emit('weekly-statistics',payload);
+
+            return 'all-sent-weekly';
+
+        }catch(err){
+            throw new Error(err);
+        }
+    }
+
+    //Method for sending reminders to those whose havent recorded session before 15:30
+    @Cron(' 30 15 * * *')
+    private async getAllMissedSessions(){
+        try{
+            const today=new Date();
+            const users=(await firstValueFrom( this.httpService.get(''))).data;
+            const sessions=await this.prismaService.userSession.findMany({
+                where:{
+                    createdAt:{gte:today}
+                }
+            });
+
+            const set=new Set<string>();
+            sessions.forEach((session:Session)=>{
+                if(!set.has(session.userId)) set.add(session.userId);
+            });
+            //TODO:fix any type
+            const missedUsers=users.filter((user:any)=>{
+                return !set.has(user.id);
+            })
+
+
+            this.client.emit('missed-watering',missedUsers);
+            return 'all-sent-missed'
+
 
         }catch(err){
             throw new Error(err);

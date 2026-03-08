@@ -27,7 +27,6 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/microservices": "^11.1.14",
     "@nestjs/platform-express": "^11.0.1",
-    "@nestjs/schedule": "^6.1.1",
     "amqp": "^0.2.7",
     "amqp-lib": "^0.3.4",
     "reflect-metadata": "^0.2.2",

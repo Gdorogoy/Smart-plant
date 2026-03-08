@@ -3,9 +3,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { StatisticsModule } from './statistics/statistics.module';
 import { ConfigModule } from '@nestjs/config';
+import { PrismaModule } from './prisma/prisma.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [StatisticsModule, ConfigModule.forRoot({isGlobal:true}),],
+  imports: [StatisticsModule, ConfigModule.forRoot({isGlobal:true}), PrismaModule,ScheduleModule.forRoot()],
   controllers: [AppController],
   providers: [AppService],
 })

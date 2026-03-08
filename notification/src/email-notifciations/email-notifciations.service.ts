@@ -2,7 +2,6 @@ import { firstValueFrom, reduce } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Cron } from '@nestjs/schedule';
 import { Resend } from 'resend';
 import { AnyARecord } from 'dns';
 
@@ -35,18 +34,21 @@ export class EmailNotifciationsService {
 
 
 
-    //Method for sending weekly statistics for the previous week (each sunday at 11:15)
-    @Cron("15 11 * * 0")
-    async sendWeeklyStatistics(){
+    //Method for sending weekly statistics for the previous week
+    async sendWeeklyStatistics(data:any){
         try{
-            const res=await firstValueFrom(this.httpSerivce.post(""));
-            if(res.data.content!=="sent all") {
-                throw new InternalServerErrorException(`
-                    Not all emails were sent. list of those who havent recived:
-                    ${res.data.missed}
-                    `
-                );
-            }
+            
+            const users=data;
+            users.forEach((user:any) => {
+                try{
+                    this.sendEmail(user.email,'weekly statistics',`${user.username},${user.stats}`);
+                }catch(err){
+                    throw new InternalServerErrorException(`Isuues at sending email to 
+                        ${user}`);
+                }
+            });    
+
+        
             return {content:'All sent'};
         }catch(err){
             throw new InternalServerErrorException(`
@@ -56,20 +58,20 @@ export class EmailNotifciationsService {
         }
     }
 
+    //TODO:add custom exeptions for errors in sending emails 
 
-    //Method for sending remaider if no session was recoreded until now each day at 15:30
-    @Cron("30 15 * * *")
-    async sendMissedWateringDay(){
+    //Method for sending remaider if no session was recoreded
+    async sendMissedWateringDay(data:any){
         try{
-            const res=await firstValueFrom(this.httpSerivce.get(""));
-            if(res.data.content!=="empty"){
-                const users=res.data.content;
-                users.forEach(async (user:any) => {
-                    await this.sendEmail(user.email,"MISSED WATERING DAY","dont miss the watering");
-                });
-                return {content:'Sent mail'};
-            }
-            return {content:'No mail sent'};
+            const users=data;
+            users.forEach((user:any) => {
+                try{
+                    this.sendEmail(user.email,'weekly statistics',`${user.username},${user.stats}`);
+                }catch(err){
+                    throw new InternalServerErrorException(`Isuues at sending email to 
+                        ${user}`);
+                }
+            })
         }catch(err){
             throw new InternalServerErrorException(`
                 Error in sending daily remainder
@@ -78,7 +80,7 @@ export class EmailNotifciationsService {
         }
     }
 
-    //Method for sending achivments to user if he unlocked new streak/Achivmedn
+    //Method for sending achivments to user if he unlocked new streak/Achivment
     async sendAchivedAchivment(user:any,subject:string,body:string){
         try{
             await this.sendEmail(user.email,subject,body);

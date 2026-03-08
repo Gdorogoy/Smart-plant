@@ -19,9 +19,3 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
-
-
-//TODO: 
-//  1.weekly report (at sunday)
-//  2.streak breask or achives 10 30 60 90 + add streak feature
-//  3.when registrating
