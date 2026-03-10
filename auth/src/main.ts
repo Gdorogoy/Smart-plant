@@ -29,7 +29,6 @@ async function bootstrap() {
 bootstrap();
 
 //TODO: 
-// 1) Add swagger 
 // 2) Add guard to the needed endpoints 
 // 3) Write custom exceptions
 // 4) Rewrite so the guards would acctually matter
