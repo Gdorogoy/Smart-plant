@@ -1,3 +1,4 @@
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
@@ -22,7 +23,15 @@ async function bootstrap() {
   //   }
   // });
 
+  const docsConfig=new DocumentBuilder()
+  .setTitle('Session service')
+  .setDescription('Service for managing sessions')
+  .build();
 
+  const docs=SwaggerModule.createDocument(app,docsConfig);
+
+  SwaggerModule.setup('docs',app,docs);
+  
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

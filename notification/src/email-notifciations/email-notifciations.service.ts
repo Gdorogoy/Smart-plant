@@ -43,7 +43,7 @@ export class EmailNotifciationsService {
                 try{
                     this.sendEmail(user.email,'weekly statistics',`${user.username},${user.stats}`);
                 }catch(err){
-                    throw new InternalServerErrorException(`Isuues at sending email to 
+                    throw new InternalServerErrorException(`Issues at sending email to 
                         ${user}`);
                 }
             });    
@@ -68,7 +68,7 @@ export class EmailNotifciationsService {
                 try{
                     this.sendEmail(user.email,'weekly statistics',`${user.username},${user.stats}`);
                 }catch(err){
-                    throw new InternalServerErrorException(`Isuues at sending email to 
+                    throw new InternalServerErrorException(`Issues at sending email to 
                         ${user}`);
                 }
             })

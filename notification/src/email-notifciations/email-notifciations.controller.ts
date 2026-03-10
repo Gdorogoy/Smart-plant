@@ -17,6 +17,7 @@ export class EmailNotifciationsController {
     return await this.emailNotifciationsService.sendMissedWateringDay(data);
   }
 
+
   @MessagePattern('weekly-statistics')
   async sendWeeklyStatistics(@Payload() data:any,context:RmqContext){
     const channel=context.getChannelRef();
