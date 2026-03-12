@@ -25,11 +25,6 @@ export class StatisticsService {
         this.SESSION_SERVICE_URL=configService.getOrThrow("SESSION_URL");
     }
 
-
-    //TODO:
-    // 2. Impelemnt method inactive users (session wernet recordeed until 15:30)
-
-
     //Fetches all of the userSessions
     private async getUserSession(id:string){
         try{
@@ -71,12 +66,14 @@ export class StatisticsService {
         const todayActivity=await this.getTodayActivity(userId);
         const weeklyActivityByPlant=await this.getWeeklyActivityByPlant(userId);
         const dailyWeeklyActivity=await this.getDailyWeeklyActivity(userId);
+        const weeklyDailyStatsPerPlant=await this.getWeeklyDailyStatsPerPlant(userId);
 
         return{
             mothlyActivity:mothlyActivity,
             todayActivity:todayActivity,
             weeklyActivityByPlant:weeklyActivityByPlant,
-            dailyWeeklyActivity:dailyWeeklyActivity
+            dailyWeeklyActivity:dailyWeeklyActivity,
+            weeklyDailyStatsPerPlant:weeklyDailyStatsPerPlant
         }
     }
 
@@ -190,7 +187,7 @@ export class StatisticsService {
                     }
                 );
             }
-            let payload;
+            let payload:any=[];
             for(const [userId,data] of map){
                 payload.push({
                     userId,
@@ -236,6 +233,50 @@ export class StatisticsService {
         }catch(err){
             throw new Error(err);
         }
+    }
+
+    async getWeeklyDailyStatsPerPlant(userId:string) {
+        const oneWeekAgo=new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate()-7);
+        const sessions=await this.getUserSession(userId);
+
+        const last7Days :string[]= [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            last7Days.push(this.normalize(d));
+        }
+        const plantStats = new Map<string, Record<string, number>>();
+
+        for(const session of sessions){
+            const plantId=session.plantId;
+            const date=this.normalize(session.createdAt);
+
+            if(!plantStats.has(plantId)){
+                
+                const weekDates:Record<string,number>={};
+                last7Days.forEach((day)=>weekDates[day]=0);
+                plantStats.set(plantId,weekDates);
+            }
+
+            const plantActivity=plantStats.get(plantId)!;
+            if(plantActivity[date]!==undefined){
+                plantActivity[date]+=session.duration;
+            }
+
+        }
+
+
+        const result:any[] = [];
+
+        for (const [plantId, stats] of plantStats) {
+                result.push({
+                    plant: plantId,
+                    activeDays: stats
+                });
+            }
+
+        return result;
     }
 
 
