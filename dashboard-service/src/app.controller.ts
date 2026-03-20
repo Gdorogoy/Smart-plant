@@ -1,12 +1,12 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { AppService } from './app.service';
 
-@Controller()
+@Controller('dashboard')
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get()
-  async getHello() {
-    return await this.appService.getUserData();
+  @Get('/:id')
+  async getUserData(@Param('id') userId :string) {
+    return await this.appService.getUserData(userId);
   }
 }

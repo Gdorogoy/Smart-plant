@@ -125,7 +125,7 @@ export class AuthService {
     
   }
 
-  logout(req:LoginRequest, res:Response){
+  logout(req:Request, res:Response){
     return this.setCookie(res,"refreshToken",new Date(0));
   }
 

@@ -11,9 +11,16 @@ export class AppService {
 
 
   //TODO: fetch the data.
-  async getUserData(){
-    const statisticService= firstValueFrom(this.httpService.get('',{}));
-    const plantService= firstValueFrom(this.httpService.get('',{}));
+  async getUserData(userId:string){
+    const statisticService= (await firstValueFrom(this.httpService.get(`http://localhost:3003/statistics/${userId}`))).data;
+    const plantService= (await firstValueFrom(this.httpService.get(`http://localhost:3005/plant/get/${userId}`))).data;
+
+    const res={
+      plants:plantService,
+      statistic:statisticService
+    }
+    
+    return res;
   }
 
 }

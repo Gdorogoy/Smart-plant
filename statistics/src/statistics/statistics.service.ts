@@ -1,5 +1,4 @@
 import { Cron } from '@nestjs/schedule';
-import { userSession } from './../../node_modules/.pnpm/@prisma+client@7.4.2_prisma@7.4.2_@types+react@19.2.14_react-dom@19.2.4_react@19.2.4__r_49b4b128965f74ea9bbd7586bc0c7d7a/node_modules/.prisma/client/index.d';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { Inject, Injectable } from '@nestjs/common';
@@ -40,9 +39,9 @@ export class StatisticsService {
         }
     }
 
-    //Method to normolize the date from DD/MM/YY:MM.. to DD-MM-YY
+    //Method to normolize the date from DD/MM/YY:MM.. to YYYY-MM-DD
     private normalize(d: Date): string {
-        return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+        return `${d.getFullYear()}-${ d.getMonth()<10 ? '0'+(d.getMonth()+1) : (d.getMonth()+1) }-${d.getDate() <10 ? '0'+d.getDate() :d.getDate()}`;
     }
 
     //Checks wheter the passed dates are the same
@@ -62,14 +61,14 @@ export class StatisticsService {
     }
 
     async getAllData(userId:string){
-        const mothlyActivity=await this.getMonthlyActivity(userId);
+        const monthlyActivity=await this.getMonthlyActivity(userId);
         const todayActivity=await this.getTodayActivity(userId);
         const weeklyActivityByPlant=await this.getWeeklyActivityByPlant(userId);
         const dailyWeeklyActivity=await this.getDailyWeeklyActivity(userId);
         const weeklyDailyStatsPerPlant=await this.getWeeklyDailyStatsPerPlant(userId);
 
         return{
-            mothlyActivity:mothlyActivity,
+            monthlyActivity:monthlyActivity,
             todayActivity:todayActivity,
             weeklyActivityByPlant:weeklyActivityByPlant,
             dailyWeeklyActivity:dailyWeeklyActivity,
@@ -81,9 +80,17 @@ export class StatisticsService {
     async getMonthlyActivity(userId: string) {
         try {
             const today = new Date();
-            
+            const monthAgo=new Date();
+            monthAgo.setDate(monthAgo.getDate()-31);
             //Fetch sessions for this request
-            const userSessionsDB = await this.getUserSession(userId);
+
+            const userSessionsDB =await this.prismaService.userSession.findMany({
+                where:{
+                    userId:userId,
+                    createdAt:{gte:monthAgo}
+                },
+            });
+
             const userSessions=userSessionsDB.map((session:Session) => this.normalize(new Date(session.createdAt)));
             const sessionSet = new Set(userSessions);
 
@@ -93,13 +100,11 @@ export class StatisticsService {
                 const d = new Date();
                 d.setDate(today.getDate() - i);
                 const dateStr = this.normalize(d);
-
                 result.push({
                     date: dateStr,
                     active: sessionSet.has(dateStr),
                 });
             }
-
             return result;
         } catch (err) {
             throw new Error(err);
@@ -144,18 +149,23 @@ export class StatisticsService {
         }
     }
 
-    //Calculates how much stuided overall across all of the days in the past week
+    //Calculates how much stuided overall across all of the days each day in the past week overall
     async getDailyWeeklyActivity(userId:string){
         try{
-            const userSession=await this.getUserSession(userId);
-            const thisWeeksSessions=userSession.filter((session:Session)=>{
-                return this.isInWeeksRange(this.normalize(new Date(session.createdAt)))
-            });
-            let sum=0;
-            thisWeeksSessions.forEach((session:Session)=> {
-                sum+=session.duration
-            });
-            return sum;
+            const oneWeekAgo=new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate()-7);
+            const userSession=await this.prismaService.userSession.findMany({
+                where:{
+                    userId:userId,
+                    createdAt:{gte:oneWeekAgo}
+                }
+            })
+            const map=new Map<string,number>();
+            userSession.forEach((session)=>{
+                map.set(this.normalize(session.createdAt),(map.get(this.normalize(session.createdAt)) ?? 0)+session.duration);
+            })
+
+            return Object.fromEntries(map);
 
         }catch(err){
             throw new Error(err);
