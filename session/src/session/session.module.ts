@@ -18,7 +18,19 @@ import { ClientProxy, ClientProxyFactory, ClientsModule, Transport } from '@nest
           durable:false
         }
       }
+    },
+    {
+      name:'USER-SERVICE',
+      transport:Transport.RMQ,
+      options:{
+        urls:["amqp://localhost:5672"],
+        queue:"user_queue",
+        queueOptions:{
+          duravle:false
+        }
+      }
     }]),
+    
   ]
 })
 export class SessionModule {}

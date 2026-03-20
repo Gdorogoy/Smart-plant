@@ -9,8 +9,6 @@ export class AppService {
 
   }
 
-
-  //TODO: fetch the data.
   async getUserData(userId:string){
     const statisticService= (await firstValueFrom(this.httpService.get(`http://localhost:3003/statistics/${userId}`))).data;
     const plantService= (await firstValueFrom(this.httpService.get(`http://localhost:3005/plant/get/${userId}`))).data;
@@ -19,7 +17,7 @@ export class AppService {
       plants:plantService,
       statistic:statisticService
     }
-    
+
     return res;
   }
 

@@ -11,7 +11,8 @@ export class SessionService {
 
     constructor(
         private readonly prismaService:PrismaService,
-        @Inject('SESSION-SERVICE') private client:ClientProxy
+        @Inject('SESSION-SERVICE') private statisticsClient:ClientProxy,
+        @Inject('USER-SERVICE') private userClient :ClientProxy
     ){
     }
 
@@ -19,7 +20,8 @@ export class SessionService {
     //Method to connect to RabbitMQ
     async onModuleInit(){
         try{
-            await this.client.connect();
+            await this.statisticsClient.connect();
+            await this.userClient.connect()
         }catch(err){
             console.error(err);
             throw err;
@@ -29,12 +31,20 @@ export class SessionService {
     //Method to send statistics data as message payload via rabbtimq
     private async sendStatistics(routingKey:string,payload:Session){
         try{
-            return lastValueFrom(this.client.send(routingKey,payload));
+            return lastValueFrom(this.statisticsClient.send(routingKey,payload));
         }catch(err){
             console.error(err);
             throw err;
         }
-        
+    }
+
+    private async sendToUser(routingKey:string,payload:any){
+        try{
+            return lastValueFrom(this.userClient.send(routingKey,payload));
+        }catch(err){
+            console.error(err);
+            throw err;
+        }
     }
 
 //   async emitMessage(pattern: string, data: any) {
@@ -60,18 +70,49 @@ export class SessionService {
     }
 
     //Method that ends session , updates the duration of it
+    // If session has split into new day it will be splited into 2
     async endSession(data :EndSessionRequest){
         try{
             const {sessionId}=data;
+
             const session=await this.prismaService.userSession.findFirst({
                 where:{
                     id:sessionId
                 }
             });
-            console.log(session);
             if(!session){
                 throw new NotFoundException('Session not found');
+            }
+            const today=new Date();
+            if(session.createdAt.getDate() !== today.getDate()){
+
+                const midNight=new Date()
+                midNight.setHours(0, 0, 0, 0);
+                const firstPart= await this.prismaService.userSession.update({
+                    where:{
+                        id:sessionId
+                    },
+                    data:{
+                        duration:(midNight.getTime()-session.createdAt.getTime())
+                    }
+                });
+
+                const {plantId,userId}=firstPart;
+
+                const timeNow=new Date();
+                const secondPart= await this.prismaService.userSession.create({
+                    data:{
+                        plantId,
+                        userId,
+                        duration:(timeNow.getTime()-midNight.getTime())
+                    }
+                });
+
+                await this.sendStatistics('new-session',firstPart);
+                await this.sendStatistics('new-session',secondPart);
+                await this.sendToUser('update-plant',{lastActivePlant:plantId})
                 return;
+
             }
 
             const updated= await this.prismaService.userSession.update({
@@ -82,8 +123,11 @@ export class SessionService {
                     duration:(Date.now()-session.createdAt.getTime())
                 }
             });
+            const {plantId}=updated;
+
             await this.sendStatistics('new-session',updated);
-            
+            await this.sendToUser('update-plant',{lastActivePlant:plantId})
+
             return updated;
 
         }catch(err){

@@ -28,6 +28,13 @@ export class UserController {
     return this.userService.getUser(id);
   }
 
+  @Patch('/:id/:plant')
+  updateLastPlant(@Param('id') id:string , @Param() plantId:string){
+    return this.userService.updateLastActivePlant(id,plantId);
+  }
+
+
+
 
 
 }

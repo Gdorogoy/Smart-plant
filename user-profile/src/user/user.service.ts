@@ -57,7 +57,8 @@ export class UserService {
         select:{
           username:true,
           goal:true,
-          id:true
+          id:true,
+          lastActivePlantId:true,
         }
       });
 
@@ -73,4 +74,27 @@ export class UserService {
 
     }
   }
+
+
+  //Method for updating users last active plant
+  async updateLastActivePlant(userId:string,plantId:string){
+    try{
+      const user=await this.prismaService.profile.update({
+        where:{
+          id:userId,
+        },
+        data:{
+          lastActivePlantId:plantId
+        }
+      });
+      
+      return;
+
+    }    
+    catch(err){
+      throw new InternalServerErrorException(err);
+
+    }
+  }
+
 }
