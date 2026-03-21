@@ -46,13 +46,12 @@ export class UserService {
 
   // User logged in via Auth service
   // Retruns users non auth related data
-  async getUser(id:string){
+  async getUser(userId:string){
     try{
-      const authId=id;
 
       const user=await this.prismaService.profile.findUnique({
         where:{
-          authId:authId
+          id:userId
         },
         select:{
           username:true,
@@ -92,6 +91,7 @@ export class UserService {
 
     }    
     catch(err){
+      console.log(err);
       throw new InternalServerErrorException(err);
 
     }

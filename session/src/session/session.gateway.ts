@@ -1,7 +1,8 @@
 import { ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { SessionService } from './session.service';
 import {Server, Socket} from 'socket.io'
-import { StartSessionRequest } from './entites/start.request';
+import { UseGuards } from '@nestjs/common';
+import { JwtGuard } from 'src/auth/jwt.guard';
 @WebSocketGateway()
 export class SessionGateway implements OnGatewayConnection , OnGatewayDisconnect {
   @WebSocketServer() server:Server;
@@ -21,6 +22,7 @@ export class SessionGateway implements OnGatewayConnection , OnGatewayDisconnect
   }
 
   @SubscribeMessage('start')
+  @UseGuards(JwtGuard)
   async startSession(
     @MessageBody() data:any,
     @ConnectedSocket() client:Socket
@@ -37,6 +39,7 @@ export class SessionGateway implements OnGatewayConnection , OnGatewayDisconnect
   }
 
   @SubscribeMessage('end')
+  @UseGuards(JwtGuard)
   async endSession(
     @MessageBody() data:any,
     @ConnectedSocket() client:Socket

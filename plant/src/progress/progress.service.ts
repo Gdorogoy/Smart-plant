@@ -26,7 +26,6 @@ export class ProgressService {
 
 
     //Adds the xp to the plant
-    //TODO:add checking if daily goal met
     async addXpToPlant(data:Session){
         try{
             const{plantId,duration,userId}=data;
@@ -39,18 +38,17 @@ export class ProgressService {
 
             const gainedXp = this.calcCurrentReceivedXp(duration);
             const newXp = plant.currentXp + gainedXp;
-            const xpNeeded = this.calcNextLevelXp(plant.currentLevel);
 
 
-            if(newXp>=xpNeeded){
+            if(newXp>=plant.nextLevelXp){
                 plant=await this.prismaService.plant.update({
                     where:{
                         id:plantId
                     },
                     data:{
                         currentLevel:plant.currentLevel+1,
-                        currentXp:newXp-xpNeeded,
-                        totalXp:plant.totalXp+newXp
+                        currentXp:newXp-plant.nextLevelXp,
+                        nextLevelXp:this.calcNextLevelXp(plant.currentLevel+1)
                     }
                 });
             }else{
@@ -60,7 +58,6 @@ export class ProgressService {
                     },
                     data:{
                         currentXp:newXp,
-                        totalXp:plant.totalXp+newXp
                     }
                 });
             }

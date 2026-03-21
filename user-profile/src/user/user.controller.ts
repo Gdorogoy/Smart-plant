@@ -1,9 +1,8 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserRequest } from './dto/create.user.request';
-import { GetUserRequest } from './dto/get.user.request';
-import { JwtGuard } from 'src/auth/jwt.guard';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
 
 
 @ApiTags('user')
@@ -29,7 +28,8 @@ export class UserController {
   }
 
   @Patch('/:id/:plant')
-  updateLastPlant(@Param('id') id:string , @Param() plantId:string){
+  @UseGuards(AuthGuard('jwt'))
+  updateLastPlant(@Param('id') id:string , @Param('plant') plantId:string){
     return this.userService.updateLastActivePlant(id,plantId);
   }
 

@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { PlantService } from './plant.service';
 import { CreatePlant } from './dto/create.request';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
 
 
 @ApiTags('plant')
@@ -13,6 +14,7 @@ export class PlantController {
     summary:'Creates the plant'
   })
   @Post('/create')
+  @UseGuards(AuthGuard('jwt'))
   async create(@Body() req:CreatePlant){
     return await this.plantService.createPlant(req);
   }
@@ -22,6 +24,7 @@ export class PlantController {
     summary:'Finds and returns the plant'
   })
   @Get('/get/:id')
+  @UseGuards(AuthGuard('jwt'))
   async getAll(@Param('id') id:string){
     return await this.plantService.getUserPlants(id);
   }

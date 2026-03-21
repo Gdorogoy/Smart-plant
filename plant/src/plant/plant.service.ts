@@ -10,7 +10,8 @@ export class PlantService {
 
     constructor(
         private readonly prismaService:PrismaService, 
-        private readonly configService:ConfigService){
+        private readonly configService:ConfigService,
+    ){
     }
 
     async createPlant(req:CreatePlant){

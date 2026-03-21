@@ -23,7 +23,7 @@ model plant{
 
   currentLevel Int @default(1)
   currentXp Int @default(0)
-  totalXp Int @default(0)
+  nextLevelXp Int @default(1000)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

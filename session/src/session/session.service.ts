@@ -110,7 +110,9 @@ export class SessionService {
 
                 await this.sendStatistics('new-session',firstPart);
                 await this.sendStatistics('new-session',secondPart);
-                await this.sendToUser('update-plant',{lastActivePlant:plantId})
+                await this.sendToUser('update-plant',{
+                    userId:userId,
+                    lastActivePlantId:plantId})
                 return;
 
             }
@@ -123,10 +125,12 @@ export class SessionService {
                     duration:(Date.now()-session.createdAt.getTime())
                 }
             });
-            const {plantId}=updated;
+            const {plantId,userId}=updated;
 
             await this.sendStatistics('new-session',updated);
-            await this.sendToUser('update-plant',{lastActivePlant:plantId})
+            await this.sendToUser('update-plant',{
+                userId:userId,
+                lastActivePlantId:plantId})
 
             return updated;
 

@@ -5,9 +5,10 @@ import { StatisticsModule } from './statistics/statistics.module';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
-  imports: [StatisticsModule, ConfigModule.forRoot({isGlobal:true}), PrismaModule,ScheduleModule.forRoot()],
+  imports: [StatisticsModule, ConfigModule.forRoot({isGlobal:true}), PrismaModule,ScheduleModule.forRoot(), AuthModule],
   controllers: [AppController],
   providers: [AppService],
 })

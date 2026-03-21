@@ -3,9 +3,10 @@ import { SessionService } from './session.service';
 import { SessionGateway } from './session.gateway';
 import { SessionController } from './session.controller';
 import { ClientProxy, ClientProxyFactory, ClientsModule, Transport } from '@nestjs/microservices';
+import { JwtGuard } from 'src/auth/jwt.guard';
 
 @Module({
-  providers: [SessionGateway, SessionService],
+  providers: [SessionGateway, SessionService,JwtGuard],
   controllers:[SessionController],
   imports:[
     ClientsModule.register([{
