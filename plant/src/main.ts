@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AllExceptionsFilter } from './filter/AllExceptionsFilter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,6 +13,8 @@ async function bootstrap() {
   }));
 
 
+  app.useGlobalFilters(new AllExceptionsFilter());
+  
   app.connectMicroservice<MicroserviceOptions>({
     transport:Transport.RMQ,
     options:{

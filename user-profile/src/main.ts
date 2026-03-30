@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AllExceptionsFilter } from './filter/AllExceptionsFilter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -10,7 +11,8 @@ async function bootstrap() {
     whitelist:true,
     transform:true
   }));
-  
+
+  app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalGuards();
   app.use(cookieParser());
 

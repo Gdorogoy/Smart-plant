@@ -16,6 +16,7 @@ export class UserController {
   })
   @Post('create')
   create(@Body() req:CreateUserRequest) {
+    console.log('im here')
     return this.userService.createUser(req);
   }
 
@@ -24,6 +25,8 @@ export class UserController {
   })
   @Get('get/:id')
   findUser(@Param('id') id: string) {
+        console.log('im here by id')
+
     return this.userService.getUser(id);
   }
 

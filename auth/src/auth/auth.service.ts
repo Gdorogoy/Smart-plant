@@ -1,5 +1,4 @@
-import { auth } from './../../node_modules/.pnpm/@prisma+client@7.4.1_prisma@7.4.1_@types+react@19.2.14_react-dom@19.2.4_react@19.2.4__r_8e53772b4f7db0920d7f3afa4e50fe46/node_modules/.prisma/client/index.d';
-import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request,Response } from 'express';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
@@ -20,8 +19,6 @@ export class AuthService {
   private readonly IS_PRODUCTION: boolean;
   private readonly USER_SERVICE_URL:string;
 
-
-
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
@@ -34,179 +31,115 @@ export class AuthService {
     this.IS_PRODUCTION = configService.get('NODE_ENV') === 'production';
     this.USER_SERVICE_URL= configService.getOrThrow('USER_SERVICE_URL');
   }
-  
 
   //Registers the user via email and password
   //Passes down the other info to User service via axios REST call
   async register(req:RegisterRequest, res:Response){
-    try{
-      const{email,password,goal,username,}=req;
-      const isExists=await this.prismaService.auth.findUnique({
-        where:{
-          email
-        }
-      })
+    const{email,password,goal,username}=req;
 
-      if(isExists){
-        throw new ConflictException("User already exists with this email");
-      }
-
-      const hashedPassword=await hash(password);
-      
-      const user=await this.prismaService.auth.create({
-        data:{
-          email,
-          password:hashedPassword
-        }
-      })
-      const data={
-        goal:goal,
-        username:username,
-        authId:user.id
-      }
-      try{
-        const axiosResponse=await firstValueFrom( this.httpService.post(`${this.USER_SERVICE_URL}/create`,data,{
-          headers:{
-            "Content-Type":'application/json'
-          }
-        }));
-      }catch(err){
-        console.error(err);
-        throw new ConflictException(err);
-      }
-
-      return this.auth(res,user.id);
-      
-    }catch(err){
-      throw new InternalServerErrorException(err);
+    const isExists=await this.prismaService.auth.findUnique({ where:{ email } });
+    if(isExists){
+      throw new ConflictException("User already exists with this email");
     }
+
+    const hashedPassword=await hash(password);
+    const user=await this.prismaService.auth.create({
+      data:{ email, password:hashedPassword }
+    });
+
+    const data={ goal, username, authId:user.id };
+    try{
+      await firstValueFrom(this.httpService.post(`${this.USER_SERVICE_URL}/create`, data, {
+        headers:{ "Content-Type":'application/json' }
+      }));
+    }catch(err){
+      throw new ConflictException("User service unavailable");
+    }
+
+    return this.auth(res, user.id);
   }
 
   //Logs in the user if the credentials are valid
   //Passes down the id to User service to get other info via axios REST call
   async login(req:LoginRequest, res:Response){
-    try{
-      const {email,password}=req;
+    const {email,password}=req;
 
-      const user=await this.prismaService.auth.findFirst({
-        where:{
-          email
-        },
-      });
-
-      if(!user){
-        throw new NotFoundException("User not found");
-      }
-
-      const same=await verify(user.password,password);
-      if(!same){
-        throw new UnauthorizedException("Password dosent match");
-      }
-
-      let userData;
-      try{
-        const axiosResponse=await firstValueFrom(this.httpService.get(`${this.USER_SERVICE_URL}/get/${user.id}`));
-        userData=axiosResponse.data;
-      }catch(err){
-        console.log(err);
-        throw new ConflictException(err);
-      }
-
-      const { accessToken } = this.auth(res, user.id);
-
-      return {
-        accessToken,
-        data:userData
-      }
-      
-    }catch(err){
-       throw new InternalServerErrorException(err);
+    const user=await this.prismaService.auth.findFirst({ where:{ email } });
+    if(!user){
+      throw new NotFoundException("User not found");
     }
-    
+
+    const same=await verify(user.password, password);
+    if(!same){
+      throw new UnauthorizedException("Password doesn't match");
+    }
+
+    let userData;
+    try{
+      const axiosResponse=await firstValueFrom(this.httpService.get(`${this.USER_SERVICE_URL}/get/${user.id}`));
+      userData=axiosResponse.data;
+    }catch(err){
+      throw new ConflictException("User service unavailable");
+    }
+
+    const { accessToken } = this.auth(res, user.id);
+    return { accessToken, data:userData };
   }
 
   logout(req:Request, res:Response){
-    return this.setCookie(res,"refreshToken",new Date(0));
+    return this.setCookie(res, "refreshToken", new Date(0));
   }
-
 
   //Method for refreshing the user tokens
   //If expired/invalid credentials throws
-  //TODO: Add try catch and custom handling of errors
-  async refresh(req:Request,res:Response){
-    try{
-      const refreshToken=req.cookies['refreshToken'];
-      if(!refreshToken){
-        throw new UnauthorizedException("Refresh token must be included");
+  async refresh(req:Request, res:Response){
+    const refreshToken=req.cookies['refreshToken'];
+    if(!refreshToken){
+      throw new UnauthorizedException("Refresh token must be included");
+    }
+
+    const payload:Payload=await this.jwtService.verifyAsync(refreshToken);
+    if(payload){
+      const user=await this.prismaService.auth.findUnique({ where:{ id:payload.id } });
+      if(!user){
+        throw new NotFoundException('User not found');
       }
-
-      const payload:Payload=await this.jwtService.verifyAsync(refreshToken);
-
-      if(payload){
-        const user=await this.prismaService.auth.findUnique({
-          where:{
-            id:payload.id
-          }
-        });
-        if(!user){
-          throw new NotFoundException('User not found');
-        }
-
-        return this.auth(res,payload.id);
-      }
-    }catch(err){
-      throw new InternalServerErrorException(err);
+      return this.auth(res, payload.id);
     }
   }
 
   //Method for validating user on the id if it exists
   async validate(id:string){
-    try{
-      const user=await this.prismaService.auth.findUnique({
-      where:{
-        id
-        }
-      });
-      if(!user){
-        throw new NotFoundException("User not found");
-      }
-      return user;
-    }catch(err){
-      throw new InternalServerErrorException(err);
-
+    const user=await this.prismaService.auth.findUnique({ where:{ id } });
+    if(!user){
+      throw new NotFoundException("User not found");
     }
+    return user;
   }
 
-  //Method for seting up the cookie
-  private setCookie(res:Response ,value:string, expiresAt:Date){
-    res.cookie('refreshToken',value,{
+  //Method for setting up the cookie
+  private setCookie(res:Response, value:string, expiresAt:Date){
+    res.cookie('refreshToken', value, {
       httpOnly:true,
       domain:this.COOKIE_DOMAIN,
       expires:expiresAt,
       secure:this.IS_PRODUCTION,
       sameSite:'lax',
-
     });
-    
   }
 
-  //Method uset to update cookies in the response
-  private auth(res:Response,id :string){
+  //Method used to update cookies in the response
+  private auth(res:Response, id:string){
     const {accessToken,refreshToken}=this.generateTokens(id);
-    this.setCookie(res,refreshToken,new Date(Date.now()+7*60*60*24*1000));
-    return{accessToken};
+    this.setCookie(res, refreshToken, new Date(Date.now()+7*60*60*24*1000));
+    return { accessToken };
   }
 
-  //Genereate JWT tokens
-  private generateTokens (id:string){
+  //Generate JWT tokens
+  private generateTokens(id:string){
     const payload={id};
-    const accessToken=this.jwtService.sign(payload,
-      {
-      expiresIn:this.JWT_ACCESS_TOKEN_TTL 
-    });
-    const refreshToken=this.jwtService.sign(payload,{'expiresIn':this.JWT_REFRESH_TOKEN_TTL});
-    return {accessToken,refreshToken}
+    const accessToken=this.jwtService.sign(payload, { expiresIn:this.JWT_ACCESS_TOKEN_TTL });
+    const refreshToken=this.jwtService.sign(payload, { expiresIn:this.JWT_REFRESH_TOKEN_TTL });
+    return {accessToken, refreshToken};
   }
-
-
 }

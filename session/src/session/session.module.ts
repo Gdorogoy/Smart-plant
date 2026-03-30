@@ -2,13 +2,15 @@ import { Module } from '@nestjs/common';
 import { SessionService } from './session.service';
 import { SessionGateway } from './session.gateway';
 import { SessionController } from './session.controller';
-import { ClientProxy, ClientProxyFactory, ClientsModule, Transport } from '@nestjs/microservices';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { JwtGuard } from 'src/auth/jwt.guard';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   providers: [SessionGateway, SessionService,JwtGuard],
   controllers:[SessionController],
   imports:[
+    AuthModule,
     ClientsModule.register([{
       name:'SESSION-SERVICE',
       transport:Transport.RMQ,

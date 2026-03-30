@@ -20,76 +20,35 @@ export class EmailNotifciationsService {
     //Method for sending email to user 
     //TODO: add diffrent templates like template for :streak , statistics, etc..
     private async sendEmail(reciver:string,subject:string,data:string){
-        try{
-            this.resend.emails.send({
-                from:'onboarding@resend.dev',
-                to:reciver,
-                subject:subject,
-                html:data
-            });
-        }catch(err){
-            throw new InternalServerErrorException(err);
-        }
+        return await this.resend.emails.send({
+            from:'onboarding@resend.dev',
+            to:reciver,
+            subject:subject,
+            html:data
+        });
     }
 
 
 
     //Method for sending weekly statistics for the previous week
-    async sendWeeklyStatistics(data:any){
-        try{
-            
-            const users=data;
-            users.forEach((user:any) => {
-                try{
-                    this.sendEmail(user.email,'weekly statistics',`${user.username},${user.stats}`);
-                }catch(err){
-                    throw new InternalServerErrorException(`Issues at sending email to 
-                        ${user}`);
-                }
-            });    
-
-        
-            return {content:'All sent'};
-        }catch(err){
-            throw new InternalServerErrorException(`
-                Error in sending weekly statistics
-                ${err}`
-            );
-        }
+    async sendWeeklyStatistics(users: any[]) {
+        await Promise.all(users.map(user => 
+            this.sendEmail(user.email, 'Weekly Statistics', `${user.username}, ${user.stats}`)
+        ));    
+        return { content: 'All sent' };
     }
 
-    //TODO:add custom exeptions for errors in sending emails 
-
     //Method for sending remaider if no session was recoreded
-    async sendMissedWateringDay(data:any){
-        try{
-            const users=data;
-            users.forEach((user:any) => {
-                try{
-                    this.sendEmail(user.email,'weekly statistics',`${user.username},${user.stats}`);
-                }catch(err){
-                    throw new InternalServerErrorException(`Issues at sending email to 
-                        ${user}`);
-                }
-            })
-        }catch(err){
-            throw new InternalServerErrorException(`
-                Error in sending daily remainder
-                ${err}`
-            );
-        }
+    async sendMissedWateringDay(users:any){
+
+        await Promise.all(users.map((user:any) => {
+            this.sendEmail(user.email,'weekly statistics',`${user.username},${user.stats}`);
+        }));
     }
 
     //Method for sending achivments to user if he unlocked new streak/Achivment
     async sendAchivedAchivment(user:any,subject:string,body:string){
-        try{
-            await this.sendEmail(user.email,subject,body);
-            return {content:'email sent'}
-        }catch(err){
-            throw new InternalServerErrorException(`
-                Error in sending streak achived
-                ${err}`
-            );
-        }
+        await this.sendEmail(user.email,subject,body);
+        return {content:'email sent'}
     }
 }

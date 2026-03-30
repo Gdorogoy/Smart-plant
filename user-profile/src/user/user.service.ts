@@ -51,7 +51,7 @@ export class UserService {
 
       const user=await this.prismaService.profile.findUnique({
         where:{
-          id:userId
+          authId:userId
         },
         select:{
           username:true,

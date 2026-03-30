@@ -13,15 +13,17 @@ export class EmailNotifciationsController {
   @MessagePattern('missed-watering')
   async sendMissedWatering(@Payload() data:any,context:RmqContext){
     const channel=context.getChannelRef();
+    await this.emailNotifciationsService.sendMissedWateringDay(data);
     channel.ack(context.getMessage());
-    return await this.emailNotifciationsService.sendMissedWateringDay(data);
+
   }
 
 
   @MessagePattern('weekly-statistics')
   async sendWeeklyStatistics(@Payload() data:any,context:RmqContext){
     const channel=context.getChannelRef();
+    await this.emailNotifciationsService.sendWeeklyStatistics(data);
     channel.ack(context.getMessage());
-    return await this.emailNotifciationsService.sendWeeklyStatistics(data);
+
   }
 }
