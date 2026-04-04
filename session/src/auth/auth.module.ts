@@ -5,8 +5,8 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
-  providers: [JwtStrategy,JwtService],
-  exports:[PassportModule,JwtService],
+  providers: [JwtStrategy],
+  exports:[PassportModule,JwtModule],
   imports:[PassportModule,ConfigModule,JwtModule.registerAsync({
     inject:[ConfigService],
     useFactory:(config:ConfigService)=>({

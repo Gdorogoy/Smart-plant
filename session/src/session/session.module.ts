@@ -19,7 +19,9 @@ import { AuthModule } from 'src/auth/auth.module';
         queue:"sessions_queue",
         queueOptions:{
           durable:false
-        }
+        },
+        noAck:true,
+
       }
     },
     {
@@ -29,8 +31,9 @@ import { AuthModule } from 'src/auth/auth.module';
         urls:["amqp://localhost:5672"],
         queue:"user_queue",
         queueOptions:{
-          duravle:false
-        }
+          durable:false
+        },
+        noAck:true
       }
     }]),
     

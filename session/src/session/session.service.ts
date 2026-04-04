@@ -31,7 +31,7 @@ export class SessionService {
     //Method to send statistics data as message payload via rabbtimq
     private async sendStatistics(routingKey:string,payload:Session){
         try{
-            return lastValueFrom(this.statisticsClient.send(routingKey,payload));
+            return lastValueFrom(this.statisticsClient.emit(routingKey,payload));
         }catch(err){
             console.error(err);
             throw err;
@@ -40,7 +40,7 @@ export class SessionService {
 
     private async sendToUser(routingKey:string,payload:any){
         try{
-            return lastValueFrom(this.userClient.send(routingKey,payload));
+            return lastValueFrom(this.userClient.emit(routingKey,payload));
         }catch(err){
             console.error(err);
             throw err;
@@ -113,6 +113,7 @@ export class SessionService {
                 await this.sendToUser('update-plant',{
                     userId:userId,
                     lastActivePlantId:plantId})
+
                 return;
 
             }
@@ -125,12 +126,15 @@ export class SessionService {
                     duration:(Date.now()-session.createdAt.getTime())
                 }
             });
+
             const {plantId,userId}=updated;
+
 
             await this.sendStatistics('new-session',updated);
             await this.sendToUser('update-plant',{
                 userId:userId,
-                lastActivePlantId:plantId})
+                lastActivePlantId:plantId}
+            );
 
             return updated;
 
